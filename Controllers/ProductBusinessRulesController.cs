@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Ajax.Utilities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.UI;
 using TestDrivenAPI.Models;
 
 namespace TestDrivenAPI.Controllers
@@ -76,22 +78,23 @@ namespace TestDrivenAPI.Controllers
             switch (type.Type)
             {
                 case "Physical":
-                    return GenerateSlip(physicalProduct);
+                    return GenerateSlip(physicalProduct, type);
                 case "Book":
                     // TBD
                     break;
                 case "MemberShip":
-                    // TBD
-                    break;
+                    return ActivateMembership(nonPhysicalProduct, type);
+
                 default:
                     // TBD
                     break;
             }
-            return GenerateSlip(physicalProduct);
+            return GenerateSlip(physicalProduct, type);
         }
 
-        private async Task<HttpResponseMessage> GenerateSlip(Product physicalProduct)
+        private async Task<HttpResponseMessage> GenerateSlip(Product physicalProduct, ProductType type)
         {
+            UpdateProductBusinessRule(type);
             const string StoragePath = @"C:\Project\TestDrivenAPI";
                if (Request.Content.IsMimeMultipartContent())
                 {
@@ -120,7 +123,34 @@ namespace TestDrivenAPI.Controllers
                 {
                     return Request.CreateResponse(HttpStatusCode.NotAcceptable, "This request is not properly formatted");
                 }
-            
+        }
+
+        public async Task<HttpResponseMessage> ActivateMembership(Product nonPhysicalProduct, ProductType type)
+        {
+            return await Task.FromResult(UpdateMemberShip(type));
+        }
+
+        public HttpResponseMessage UpdateMemberShip(ProductType type)
+        {
+            if (Request.Content.IsMimeMultipartContent())
+            {
+                //var user = new User();//TBD
+                var ProductBusinessRule = new ProductBusinessRule();
+                UpdateProductBusinessRule(type);//Corresponding Business rule
+                //AddMembership();
+                //return Ok(ProductBusinessRule);//This should return the User object like below  
+            }
+            return Request.CreateResponse(HttpStatusCode.OK);
+        }
+        public int UpdateProductBusinessRule(ProductType type)
+        {
+            int result = 0;
+            ProductBusinessRule obProductBusinessRule = new ProductBusinessRule();
+            obProductBusinessRule.BusinessRuleName = "Generate Slip";//This can be Global values  and can set globaly.So it can change based on the product Type
+            obProductBusinessRule.isActive = true;
+            obProductBusinessRule.ProductTypeId = type.ProductTypeId;
+            //result = DBNull.ExecuteNonQuery(obProductBusinessRule)//TBD
+            return result; 
         }
     }
 }
